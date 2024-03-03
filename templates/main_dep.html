@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+
+{% block content %}
+        {% if current_user.is_authenticated %}
+            <h2>Мои департаменты</h2>
+            <a href="/" class="btn btn-secondary">Вернуться к работам</a>
+            <a href="/add_department" class="btn btn-secondary">Добавить департамент</a>
+            <br>
+            {% for dep in departments %}
+                <h3 class="num">Департамент № {{ loop.index }}</h3>
+                <table>
+                    <tr>
+                        <th>Название</th>
+                        <th>Главный</th>
+                        <th>Работники</th>
+                        <th>Почта</th>
+                    </tr>
+                    <tr>
+                        <td>{{ dep.title }}</td>
+                        <td>{{ dep.chief }}</td>
+                        <td>{{ dep.members }}</td>
+                        <td>{{ dep.email }}</td>
+                    </tr>
+                </table>
+                {% if current_user.id == dep.chief or current_user.id == 1 %}
+                    <div>
+                        <a href="/add_department/{{ dep.id }}" class="btn btn-warning">
+                            Изменить
+                        </a>
+                        <a href="/department_delete/{{ dep.id }}" class="btn btn-danger">
+                            Удалить
+                        </a>
+                    </div>
+                {% endif %}
+            {% endfor %}
+        {% endif %}
+{% endblock %}

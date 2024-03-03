@@ -40,6 +40,14 @@ class RegisterForm(FlaskForm):
     submit = SubmitField('submit')
 
 
+class DepartmentForm(FlaskForm):
+    title = StringField('Название')
+    chief = IntegerField('Главный')
+    members = StringField('Работники')
+    email = EmailField('Почта', validators=[InputRequired()])
+    submit = SubmitField('submit')
+
+
 class User(SqlAlchemyBase, UserMixin):
     __tablename__ = 'users'
 

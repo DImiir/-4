@@ -23,8 +23,21 @@ def index(title='main'):
         if current_user.id == 1:
             jobs = db_sess.query(Jobs).all()
         else:
-            jobs = db_sess.query(Jobs).filter(Jobs.team_leader.like(current_user.id) | Jobs.collaborators.contains(current_user.id))
-        return render_template('main.html', title=title, jobs=jobs)
+            jobs = db_sess.query(Jobs).filter(Jobs.team_leader.like(current_user.id) |
+                                              Jobs.collaborators.contains(current_user.id))
+        return render_template('main_jobs.html', title=title, jobs=jobs)
+    return render_template('base.html', title=title)
+
+
+@app.route('/main_dep')
+def main_dep(title='main'):
+    if current_user.is_authenticated:
+        db_sess = db_session.create_session()
+        if current_user.id == 1:
+            deps = db_sess.query(Department).all()
+        else:
+            deps = db_sess.query(Department).filter(Department.chief.like(current_user.id) | Department.members.contains(current_user.id))
+        return render_template('main_dep.html', title=title, departments=deps)
     return render_template('base.html', title=title)
 
 
@@ -133,7 +146,7 @@ def edit_jobs(id):
 
 @app.route('/jobs_delete/<int:id>', methods=['GET', 'POST'])
 @login_required
-def news_delete(id):
+def jobs_delete(id):
     db_sess = db_session.create_session()
     if current_user.id == 1:
         jobs = db_sess.query(Jobs).filter(Jobs.id == id).first()
@@ -145,6 +158,74 @@ def news_delete(id):
     else:
         abort(404)
     return redirect('/')
+
+
+@app.route('/add_department', methods=['GET', 'POST'])
+@login_required
+def add_department():
+    form = DepartmentForm()
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        dep = Department()
+        dep.title = form.title.data
+        dep.chief = form.chief.data
+        dep.members = form.members.data
+        dep.email = form.email.data
+        db_sess.add(dep)
+        db_sess.commit()
+        return redirect('/main_dep')
+    return render_template('departmentadd.html', title='Добавление департамента', form=form)
+
+
+@app.route('/add_department/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_department(id):
+    form = DepartmentForm()
+    if request.method == "GET":
+        db_sess = db_session.create_session()
+        if current_user.id == 1:
+            dep = db_sess.query(Department).filter(Department.id == id).first()
+        else:
+            dep = db_sess.query(Department).filter(Department.id == id, Department.chief == current_user.id).first()
+        if dep:
+            form.title.data = dep.title
+            form.chief.data = dep.chief
+            form.members.data = dep.members
+            form.email.data = dep.email
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        if current_user.id == 1:
+            dep = db_sess.query(Department).filter(Department.id == id).first()
+        else:
+            dep = db_sess.query(Department).filter(Department.id == id, Department.chief == current_user.id).first()
+        if dep:
+            dep.title = form.title.data
+            dep.chief = form.chief.data
+            dep.members = form.members.data
+            dep.email = form.email.data
+            db_sess.commit()
+            return redirect('/main_dep')
+        else:
+            abort(404)
+    return render_template('departmentadd.html', title='Редактирование департамента', form=form)
+
+
+@app.route('/department_delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+def department_delete(id):
+    db_sess = db_session.create_session()
+    if current_user.id == 1:
+        dep = db_sess.query(Department).filter(Department.id == id).first()
+    else:
+        dep = db_sess.query(Department).filter(Department.id == id, Department.chief == current_user.id).first()
+    if dep:
+        db_sess.delete(dep)
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect('/main_dep')
 
 
 if __name__ == '__main__':

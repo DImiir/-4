@@ -4,9 +4,10 @@
         {% if current_user.is_authenticated %}
             <h2>Мои работы</h2>
             <a href="/add_job" class="btn btn-secondary">Добавить работу</a>
+            <a href="/main_dep" class="btn btn-secondary">Показать департаменты</a>
             <br>
             {% for job in jobs %}
-                <h3 class="job-num">Работа № {{ loop.index }}</h3>
+                <h3 class="num">Работа № {{ loop.index }}</h3>
                 <table>
                     <tr>
                         <th>Название</th>
