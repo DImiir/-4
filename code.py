@@ -1,4 +1,4 @@
-from flask import Flask, redirect, render_template
+from flask import Flask, redirect, render_template, request, abort
 from data.__all_models import *
 from data import db_session
 from flask_login import LoginManager, login_user, current_user, login_required, logout_user
@@ -20,10 +20,12 @@ def load_user(user_id):
 def index(title='main'):
     if current_user.is_authenticated:
         db_sess = db_session.create_session()
-        jobs = db_sess.query(Jobs).filter(Jobs.team_leader.like(current_user.id) | Jobs.collaborators.contains(current_user.id))
-    else:
-        jobs = None
-    return render_template('base.html', title=title, jobs=jobs)
+        if current_user.id == 1:
+            jobs = db_sess.query(Jobs).all()
+        else:
+            jobs = db_sess.query(Jobs).filter(Jobs.team_leader.like(current_user.id) | Jobs.collaborators.contains(current_user.id))
+        return render_template('main.html', title=title, jobs=jobs)
+    return render_template('base.html', title=title)
 
 
 @app.route('/register', methods=['GET', 'POST'])
@@ -57,9 +59,7 @@ def login():
         if user and user.verify_password(form.password.data):
             login_user(user, remember=form.remember_me.data)
             return redirect("/")
-        return render_template('login.html',
-                               message="Неправильный логин или пароль",
-                               form=form)
+        return render_template('login.html', message="Неправильный логин или пароль", form=form)
     return render_template('login.html', title='Авторизация', form=form)
 
 
@@ -88,6 +88,63 @@ def add_job():
 def logout():
     logout_user()
     return redirect("/")
+
+
+@app.route('/add_job/<int:id>', methods=['GET', 'POST'])
+@login_required
+def edit_jobs(id):
+    form = JobForm()
+    if request.method == "GET":
+        db_sess = db_session.create_session()
+        if current_user.id == 1:
+            jobs = db_sess.query(Jobs).filter(Jobs.id == id).first()
+        else:
+            jobs = db_sess.query(Jobs).filter(Jobs.id == id, Jobs.team_leader == current_user.id).first()
+        if jobs:
+            form.team_leader.data = jobs.team_leader
+            form.job.data = jobs.job
+            form.work_size.data = jobs.work_size
+            form.collaborators.data = jobs.collaborators
+            form.start_date.data = jobs.start_date
+            form.end_date.data = jobs.end_date
+            form.is_finished.data = jobs.is_finished
+        else:
+            abort(404)
+    if form.validate_on_submit():
+        db_sess = db_session.create_session()
+        if current_user.id == 1:
+            jobs = db_sess.query(Jobs).filter(Jobs.id == id).first()
+        else:
+            jobs = db_sess.query(Jobs).filter(Jobs.id == id, Jobs.team_leader == current_user.id).first()
+        if jobs:
+            jobs.team_leader = form.team_leader.data
+            jobs.job = form.job.data
+            jobs.work_size = form.work_size.data
+            jobs.collaborators = form.collaborators.data
+            jobs.start_date = form.start_date.data
+            jobs.end_date = form.end_date.data
+            jobs.is_finished = form.is_finished.data
+            db_sess.commit()
+            return redirect('/')
+        else:
+            abort(404)
+    return render_template('jobadd.html', title='Редактирование новости', form=form)
+
+
+@app.route('/jobs_delete/<int:id>', methods=['GET', 'POST'])
+@login_required
+def news_delete(id):
+    db_sess = db_session.create_session()
+    if current_user.id == 1:
+        jobs = db_sess.query(Jobs).filter(Jobs.id == id).first()
+    else:
+        jobs = db_sess.query(Jobs).filter(Jobs.id == id, Jobs.team_leader == current_user.id).first()
+    if jobs:
+        db_sess.delete(jobs)
+        db_sess.commit()
+    else:
+        abort(404)
+    return redirect('/')
 
 
 if __name__ == '__main__':

@@ -12,8 +12,7 @@
         <h1>Миссия Колонизация Марса</h1>
         <nav>
             {% if current_user.is_authenticated %}
-                <a class="navbar-brand" href="/logout">{{ current_user.name }}</a>
-                <a href="/add_job" class="btn btn-secondary">Добавить работу</a>
+                <a class="navbar-brand" href="/logout">{{ current_user.name }} {{ current_user.surname }}</a>
             {% else %}
                 <p>
                     <a class="btn btn-primary " href="/register">Зарегистрироваться</a>
@@ -24,31 +23,7 @@
         <h3>И на Марсе будут яблони цвести!</h3>
     </header>
     <main role="main" class="container">
-        {% if current_user.is_authenticated %}
-            <h2>Мои работы</h2>
-            <br>
-            {% for job in jobs %}
-                <h3 class="job-num">Работа № {{ loop.index }}</h3>
-                <table>
-                    <tr>
-                        <th>Название</th>
-                        <th>Капитан</th>
-                        <th>Продолжительность</th>
-                        <th>Работники</th>
-                        <th>Завершённость</th>
-                    </tr>
-                    <tr>
-                        <td>{{ job.job }}</td>
-                        <td>{{ job.team_leader }}</td>
-                        <td>{{ job.work_size }}</td>
-                        <td>{{ job.collaborators }}</td>
-                        <td>{{ job.is_finished }}</td>
-                    </tr>
-                </table>
-            {% endfor %}
-        {% else %}
-            {% block content %}{% endblock %}
-        {% endif %}
+        {% block content %}{% endblock %}
     </main>
 </body>
 </html>
