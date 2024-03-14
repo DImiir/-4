@@ -3,6 +3,7 @@ from data.__all_models import *
 from data import db_session
 from flask_login import LoginManager, login_user, current_user, login_required, logout_user
 
+
 app = Flask(__name__)
 app.config['SECRET_KEY'] = 'yandexlyceum_secret_key'
 login_manager = LoginManager()
@@ -54,8 +55,9 @@ def register():
         user.speciality = form.speciality.data
         user.address = form.address.data
         user.email = form.email.data
-        user.hashed_password = generate_password_hash(form.hashed_password.data)
+        user.hashed_password = form.hashed_password.data
         user.modified_date = form.modified_date.data
+        user.password(user.hashed_password)
         db_sess.add(user)
         db_sess.commit()
         login_user(user)
