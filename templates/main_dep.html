@@ -3,7 +3,7 @@
 {% block content %}
         {% if current_user.is_authenticated %}
             <h2>Мои департаменты</h2>
-            <a href="/" class="btn btn-secondary">Вернуться к работам</a>
+            <a href="/" class="btn btn-secondary">Показать работы</a>
             <a href="/add_department" class="btn btn-secondary">Добавить департамент</a>
             <br>
             {% for dep in departments %}

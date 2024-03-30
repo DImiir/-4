@@ -21,12 +21,13 @@ def load_user(user_id):
 def index(title='main'):
     if current_user.is_authenticated:
         db_sess = db_session.create_session()
-        if current_user.id == 1:
-            jobs = db_sess.query(Jobs).all()
-        else:
-            jobs = db_sess.query(Jobs).filter(Jobs.team_leader.like(current_user.id) |
-                                              Jobs.collaborators.contains(current_user.id))
-        return render_template('main_jobs.html', title=title, jobs=jobs)
+        assoc = db_sess.query(association_table).all()
+        assoc_list = []
+        for number in assoc:
+            jobs = db_sess.query(Jobs).filter(Jobs.id == number.jobs).first()
+            category = db_sess.query(Category).filter(Category.id == number.category).first()
+            assoc_list.append((jobs, category))
+        return render_template('main_jobs.html', title=title, assoc=assoc_list)
     return render_template('base.html', title=title)
 
 
@@ -85,13 +86,16 @@ def add_job():
     if form.validate_on_submit():
         db_sess = db_session.create_session()
         jobs = Jobs()
+        cat = Category()
         jobs.team_leader = form.team_leader.data
         jobs.job = form.job.data
+        cat.name = form.category.data
         jobs.work_size = form.work_size.data
         jobs.collaborators = form.collaborators.data
         jobs.start_date = form.start_date.data
         jobs.end_date = form.end_date.data
         jobs.is_finished = form.is_finished.data
+        jobs.categories.append(cat)
         db_sess.add(jobs)
         db_sess.commit()
         return redirect('/')
@@ -111,10 +115,12 @@ def edit_jobs(id):
     form = JobForm()
     if request.method == "GET":
         db_sess = db_session.create_session()
+        assoc = db_sess.query(association_table).filter(association_table.columns.jobs == id).first()
+        cat = db_sess.query(Category).filter(Category.id == assoc.category).first()
         if current_user.id == 1:
-            jobs = db_sess.query(Jobs).filter(Jobs.id == id).first()
+            jobs = db_sess.query(Jobs).filter(Jobs.id == assoc.jobs).first()
         else:
-            jobs = db_sess.query(Jobs).filter(Jobs.id == id, Jobs.team_leader == current_user.id).first()
+            jobs = db_sess.query(Jobs).filter(Jobs.id == assoc.jobs, Jobs.team_leader == current_user.id).first()
         if jobs:
             form.team_leader.data = jobs.team_leader
             form.job.data = jobs.job
@@ -123,14 +129,17 @@ def edit_jobs(id):
             form.start_date.data = jobs.start_date
             form.end_date.data = jobs.end_date
             form.is_finished.data = jobs.is_finished
+            form.category.data = cat.name
         else:
             abort(404)
     if form.validate_on_submit():
         db_sess = db_session.create_session()
+        assoc = db_sess.query(association_table).filter(association_table.columns.jobs == id).first()
+        cat = db_sess.query(Category).filter(Category.id == assoc.category).first()
         if current_user.id == 1:
-            jobs = db_sess.query(Jobs).filter(Jobs.id == id).first()
+            jobs = db_sess.query(Jobs).filter(Jobs.id == assoc.jobs).first()
         else:
-            jobs = db_sess.query(Jobs).filter(Jobs.id == id, Jobs.team_leader == current_user.id).first()
+            jobs = db_sess.query(Jobs).filter(Jobs.id == assoc.jobs, Jobs.team_leader == current_user.id).first()
         if jobs:
             jobs.team_leader = form.team_leader.data
             jobs.job = form.job.data
@@ -139,6 +148,7 @@ def edit_jobs(id):
             jobs.start_date = form.start_date.data
             jobs.end_date = form.end_date.data
             jobs.is_finished = form.is_finished.data
+            cat.name = form.category.data
             db_sess.commit()
             return redirect('/')
         else:
@@ -150,11 +160,15 @@ def edit_jobs(id):
 @login_required
 def jobs_delete(id):
     db_sess = db_session.create_session()
+    assoc = db_sess.query(association_table).filter(association_table.columns.jobs == id).first()
+    cat = db_sess.query(Category).filter(Category.id == assoc.category).first()
     if current_user.id == 1:
-        jobs = db_sess.query(Jobs).filter(Jobs.id == id).first()
+        jobs = db_sess.query(Jobs).filter(Jobs.id == assoc.jobs).first()
     else:
-        jobs = db_sess.query(Jobs).filter(Jobs.id == id, Jobs.team_leader == current_user.id).first()
+        jobs = db_sess.query(Jobs).filter(Jobs.id == assoc.jobs, Jobs.team_leader == current_user.id).first()
     if jobs:
+        jobs.categories.remove(cat)
+        db_sess.delete(cat)
         db_sess.delete(jobs)
         db_sess.commit()
     else:
